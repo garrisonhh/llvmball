@@ -28,11 +28,32 @@
 
           dontConfigure = true;
           dontPatch = true;
+          dontInstall = true;
 
           buildPhase = ''
-            INCLUDE=include/
-            LIBS=libs/
+            mkdir -p $out/
+
+            INCLUDE="$out/include"
+            LIBS="$out/libs"
             LLVMBALL=llvmball.tar.gz
+
+            install_dir_rec() {
+              DIR="$1"
+              DEST="$2"
+
+              mkdir -p "$DEST"
+              find "$DIR" | while read -r filepath; do
+                relpath=`realpath --relative-to="$DIR" $filepath`
+                dest="$DEST/$relpath"
+
+                if [ -d $filepath ]; then
+                  mkdir -p $dest
+                else
+                  dest_dir=`dirname $dest`
+                  install -m 644 -t $dest_dir $filepath
+                fi
+              done
+            }
 
             # llvm libs
             LLVM_LIBFILES=`llvm-config --libfiles --link-static`
@@ -45,26 +66,14 @@
             # include
             INCLUDEDIR=`llvm-config --includedir`
 
-            mkdir -p "$INCLUDE"
-            find "$INCLUDEDIR" | while read -r filepath; do
-              relpath=`realpath --relative-to="$INCLUDEDIR" $filepath`
-              dest="$INCLUDE/$relpath"
+            install_dir_rec "$INCLUDEDIR" "$INCLUDE"
 
-              if [ -d $filepath ]; then
-                mkdir -p $dest
-              else
-                dest_dir=`dirname $dest`
-                install -m 644 -t $dest_dir $filepath
-              fi
-            done
+            # zig
+            install_dir_rec zig/ $out
 
             # tar it up
-            tar czf "$LLVMBALL" "$INCLUDE" "$LIBS"
-          '';
-
-          installPhase = ''
-            mkdir -p $out
-            install -t $out "$LLVMBALL"
+            cd $out/
+            tar czf "$LLVMBALL" *
           '';
         };
       in
