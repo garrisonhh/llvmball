@@ -21,30 +21,44 @@
           inherit system;
           src = self;
 
-          nativeBuildInputs = [ llvm ];
+          nativeBuildInputs = [
+            pkgs.pkg-config
+            llvm
+          ];
 
           dontConfigure = true;
           dontPatch = true;
 
           buildPhase = ''
-            # libs
+            INCLUDE=include/
             LIBS=libs/
-            LIBFILES=`llvm-config --libfiles --link-static`
+            LLVMBALL=llvmball.tar.gz
+
+            # llvm libs
+            LLVM_LIBFILES=`llvm-config --libfiles --link-static`
 
             mkdir -p "$LIBS"
-            for libpath in $LIBFILES; do
+            for libpath in $LLVM_LIBFILES; do
               install -t "$LIBS" "$libpath"
             done
 
             # include
-            INCLUDE=include/
             INCLUDEDIR=`llvm-config --includedir`
 
-            cp -r "$INCLUDEDIR" "$INCLUDE"
+            mkdir -p "$INCLUDE"
+            find "$INCLUDEDIR" | while read -r filepath; do
+              relpath=`realpath --relative-to="$INCLUDEDIR" $filepath`
+              dest="$INCLUDE/$relpath"
+
+              if [ -d $filepath ]; then
+                mkdir -p $dest
+              else
+                dest_dir=`dirname $dest`
+                install -m 644 -t $dest_dir $filepath
+              fi
+            done
 
             # tar it up
-            LLVMBALL=llvmball.tar.gz
-
             tar czf "$LLVMBALL" "$INCLUDE" "$LIBS"
           '';
 
