@@ -70,9 +70,6 @@
 
             install_dir_rec "$INCLUDEDIR" "$INCLUDE"
 
-            # zig
-            install_dir_rec zig/ "$BASE"
-
             # tar it up
             tar czf "$LLVMBALL" "$BASE"
           '';
