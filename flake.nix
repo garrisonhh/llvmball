@@ -15,7 +15,7 @@
         llvmPkgs = pkgs.llvmPackages_16;
         llvm = llvmPkgs.llvm.dev;
 
-        ball = pkgs.stdenv.mkDerivation {
+        ball = pkgs.stdenv.mkDerivation rec {
           pname = "llvmball";
           version = llvm.version;
           inherit system;
@@ -31,11 +31,13 @@
           dontInstall = true;
 
           buildPhase = ''
-            mkdir -p $out/
+            BASE="llvmball"
+            INCLUDE="$BASE/include"
+            LIBS="$BASE/libs"
+            LLVMBALL="$out/${pname}-${version}.tar.gz"
 
-            INCLUDE="$out/include"
-            LIBS="$out/libs"
-            LLVMBALL=llvmball.tar.gz
+            mkdir -p $out
+            mkdir -p "$BASE"
 
             install_dir_rec() {
               DIR="$1"
@@ -69,11 +71,10 @@
             install_dir_rec "$INCLUDEDIR" "$INCLUDE"
 
             # zig
-            install_dir_rec zig/ $out
+            install_dir_rec zig/ "$BASE"
 
             # tar it up
-            cd $out/
-            tar czf "$LLVMBALL" *
+            tar czf "$LLVMBALL" "$BASE"
           '';
         };
       in
