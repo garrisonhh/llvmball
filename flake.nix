@@ -58,7 +58,7 @@
             }
 
             # llvm libs
-            LLVM_LIBFILES=`llvm-config --libfiles --link-static`
+            LLVM_LIBFILES=`{ llvm-config --libfiles --link-static & llvm-config --libfiles --link-shared; }`
 
             mkdir -p "$LIBS"
             for libpath in $LLVM_LIBFILES; do
